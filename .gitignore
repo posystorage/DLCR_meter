@@ -34,13 +34,21 @@
 *.app
 *.i*86
 *.x86_64
-*.hex
+# *.hex
 
 # Debug files
 *.dSYM/
 *.su
 *.idb
 *.pdb
+
+# ARM MDK Keil
+*.lst
+*.crf
+*.dep
+*.htm
+*.lnp
+*.sct
 
 # Kernel Module Compile Results
 *.mod*

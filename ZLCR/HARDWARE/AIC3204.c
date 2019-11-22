@@ -47,7 +47,7 @@
 #define I2S_ODD 1
 
 uint16_t I2S_ADC_Buff[I2S_Data_Buff_Size];
-uint16_t I2S_ADC_Buff[I2S_Data_Buff_Size];
+uint16_t I2S_DAC_Buff[I2S_Data_Buff_Size];
 
 const uint8_t ZLCR_AIC3204_CODEC_Init_CMD_Table[][2] = 
 {
@@ -90,19 +90,19 @@ const uint8_t ZLCR_AIC3204_CODEC_Init_CMD_Table[][2] =
     // {0x14, 0x25}, //HP settime  to
 
     /* Input Step */
-    {0x34, 0x10}, //Route IN2L to LEFT_P with 10k
+    {0x34, 0x10}, //Route IN2L to LEFT_P with 10k  //Vol
     {0x36, 0x10}, //Route IN2R to LEFT_M with 10k
-    {0x37, 0x40}, //Route IN1R to RIGHT_P with 10k
+    {0x37, 0x40}, //Route IN1R to RIGHT_P with 10k   //Cur
     {0x39, 0x10}, //Route IN1L to RIGHT_M with 10k
 
     {0x3b, 0x00}, //Left  MicPGA not mute, gain to 0dB
     {0x3c, 0x00}, //Right MicPGA not mute, gain to 0dB
 
     /* Output Step */
-    {0x0c, 0x08}, //Route Left  DAC to HPL
-    {0x0d, 0x08}, //Route Right DAC to HPR
-    {0x0e, 0x08}, //Route Left  DAC to LOL
-    {0x0f, 0x08}, //Route Right DAC to LOR
+    {0x0c, 0x08}, //Route Left  DAC Positive to HPL
+    {0x0d, 0x08}, //Route Right DAC Positive to HPR
+    {0x0e, 0x08}, //Route Left  DAC Negtive to LOL
+    {0x0f, 0x08}, //Route Right DAC Negtive to LOR
 
     {0x10, 0x00}, //HPL gain to 0dB
     {0x11, 0x00}, //HPR gain to 0dB
@@ -163,10 +163,21 @@ void I2S_Init(void)
 	I2S2ext->I2SCFGR = SPI_I2SCFGR_I2SMOD|SPI_I2SCFGR_I2SCFG_0;//I2S mode,Slave_RX,I2S_Philips,Clk_Low,16bit
 	I2S2ext->CR2 = SPI_CR2_RXDMAEN;
 	I2S2ext->I2SCFGR = 2;
-	//DMA1_Stream3;
+	
+	DMA1_Stream3->PAR = (uint32_t)(&I2S2ext->CRCPR);
+	DMA1_Stream3->M0AR = (uint32_t)I2S_ADC_Buff;
+	DMA1_Stream3->NDTR = I2S_Data_Buff_Size;
+	DMA1_Stream3->CR = (3<<25)|DMA_SxCR_PL_1|DMA_SxCR_MSIZE_0|DMA_SxCR_PSIZE_0|DMA_SxCR_MINC|DMA_SxCR_PFCTRL;
+	
+	DMA1_Stream4->PAR = (uint32_t)(&SPI2->CRCPR);
+	DMA1_Stream4->M0AR = (uint32_t)I2S_DAC_Buff;
+	DMA1_Stream4->NDTR = I2S_Data_Buff_Size;
+	DMA1_Stream4->CR = (0<<25)|DMA_SxCR_PL_0|DMA_SxCR_MSIZE_0|DMA_SxCR_PSIZE_0|DMA_SxCR_MINC|DMA_SxCR_DIR_0|DMA_SxCR_PFCTRL;
 	
 	SPI2->I2SCFGR |= SPI_I2SCFGR_I2SE;
 	I2S2ext->I2SCFGR |= SPI_I2SCFGR_I2SE;	
+	DMA1_Stream3->CR |= DMA_SxCR_EN;
+	DMA1_Stream4->CR |= DMA_SxCR_EN;
 }
 
 void AIC3204_Init(void)
@@ -193,6 +204,4 @@ void AIC3204_Init(void)
 	{
 		I2C_Write_Reg(AIC3204_I2C_ADDR,ZLCR_AIC3204_CODEC_Init_CMD_Table[i][0],ZLCR_AIC3204_CODEC_Init_CMD_Table[i][1]);
 	}
-	
-	
 }
