@@ -1,5 +1,6 @@
 #include "AIC3204.h"
 #include "I2C.h"
+#include "LCR_core.h"
 //Data format=16bit
 //HSI 12MHz
 //PLLM=12
@@ -46,8 +47,8 @@
 #define I2S_DIV 11
 #define I2S_ODD 1
 
-uint16_t I2S_ADC_Buff[I2S_Data_Buff_Size];
-uint16_t I2S_DAC_Buff[I2S_Data_Buff_Size];
+uint16_t I2S_ADC_Buffer[2][I2S_Data_Buffer_Size];
+uint16_t I2S_DAC_Buffer[2][I2S_Data_Buffer_Size];
 
 const uint8_t ZLCR_AIC3204_CODEC_Init_CMD_Table[][2] = 
 {
@@ -165,20 +166,45 @@ void I2S_Init(void)
 	I2S2ext->I2SCFGR = 2;
 	
 	DMA1_Stream3->PAR = (uint32_t)(&I2S2ext->CRCPR);
-	DMA1_Stream3->M0AR = (uint32_t)I2S_ADC_Buff;
-	DMA1_Stream3->NDTR = I2S_Data_Buff_Size;
-	DMA1_Stream3->CR = (3<<25)|DMA_SxCR_PL_1|DMA_SxCR_MSIZE_0|DMA_SxCR_PSIZE_0|DMA_SxCR_MINC|DMA_SxCR_PFCTRL;
+	DMA1_Stream3->M0AR = (uint32_t)&I2S_ADC_Buffer[0][0];
+	DMA1_Stream3->M1AR = (uint32_t)&I2S_ADC_Buffer[1][0];
+	DMA1_Stream3->NDTR = I2S_Data_Buffer_Size;
+	DMA1_Stream3->FCR = DMA_SxFCR_DMDIS|DMA_SxFCR_FTH_0;
+	DMA1_Stream3->CR = (3<<25)|DMA_SxCR_DBM|DMA_SxCR_PL_1|DMA_SxCR_MSIZE_0|DMA_SxCR_PSIZE_0|DMA_SxCR_MINC|DMA_SxCR_PFCTRL|DMA_SxCR_TCIE;
 	
 	DMA1_Stream4->PAR = (uint32_t)(&SPI2->CRCPR);
-	DMA1_Stream4->M0AR = (uint32_t)I2S_DAC_Buff;
-	DMA1_Stream4->NDTR = I2S_Data_Buff_Size;
-	DMA1_Stream4->CR = (0<<25)|DMA_SxCR_PL_0|DMA_SxCR_MSIZE_0|DMA_SxCR_PSIZE_0|DMA_SxCR_MINC|DMA_SxCR_DIR_0|DMA_SxCR_PFCTRL;
+	DMA1_Stream4->M0AR = (uint32_t)&I2S_DAC_Buffer[0][0];
+	DMA1_Stream4->M1AR = (uint32_t)&I2S_DAC_Buffer[1][0];
+	DMA1_Stream4->NDTR = I2S_Data_Buffer_Size;
+	DMA1_Stream4->FCR = DMA_SxFCR_DMDIS|DMA_SxFCR_FTH_0;
+	DMA1_Stream4->CR = (0<<25)|DMA_SxCR_DBM|DMA_SxCR_PL_0|DMA_SxCR_MSIZE_0|DMA_SxCR_PSIZE_0|DMA_SxCR_MINC|DMA_SxCR_DIR_0|DMA_SxCR_PFCTRL;
+	
+	NVIC->ISER[DMA1_Stream3_IRQn/32] |= 1<<DMA1_Stream3_IRQn%32;
+	NVIC->IP[DMA1_Stream3_IRQn] = (3<<5)|(0<<4);
 	
 	SPI2->I2SCFGR |= SPI_I2SCFGR_I2SE;
 	I2S2ext->I2SCFGR |= SPI_I2SCFGR_I2SE;	
 	DMA1_Stream3->CR |= DMA_SxCR_EN;
 	DMA1_Stream4->CR |= DMA_SxCR_EN;
+}//DMA1_Stream3_IRQn
+
+void DMA1_Stream3_IRQHandler(void)
+{
+	if((DMA1->LISR&DMA_LISR_TCIF3)==DMA_LISR_TCIF3)
+	{
+		if((DMA1_Stream3->CR&DMA_SxCR_CT)==DMA_SxCR_CT)
+		{
+			LCR_Call_Back(&I2S_ADC_Buffer[0][0],&I2S_DAC_Buffer[0][0],I2S_Data_Buffer_Size);
+		}
+		else
+		{
+			LCR_Call_Back(&I2S_ADC_Buffer[1][0],&I2S_DAC_Buffer[1][0],I2S_Data_Buffer_Size);		
+		}	
+	}
+	DMA1->LIFCR |= DMA_LIFCR_CTCIF3|DMA_LIFCR_CHTIF3|DMA_LIFCR_CTEIF3|DMA_LIFCR_CDMEIF3|DMA_LIFCR_CFEIF3;
+	//DMA1->HIFCR |= DMA_HISR_TCIF4;
 }
+
 
 void AIC3204_Init(void)
 {

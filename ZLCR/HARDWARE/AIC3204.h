@@ -3,7 +3,7 @@
 #include "sys.h"
 
 #define AIC3204_I2C_ADDR 0x30
-#define I2S_Data_Buff_Size 2048
+#define I2S_Data_Buffer_Size 1024
 
 
 
@@ -13,7 +13,8 @@ void AIC3204_Init(void);
 
 
 
-
+extern uint16_t I2S_ADC_Buffer[2][I2S_Data_Buffer_Size];
+extern uint16_t I2S_DAC_Buffer[2][I2S_Data_Buffer_Size];
 
 
 #endif

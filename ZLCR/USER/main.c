@@ -3,6 +3,7 @@
 #include "I2C.h"
 #include "AIC3204.h"
 #include "EEPROM24C.h"
+#include "LCR_core.h"
 
 void I2C_Peripheral_Check(void)
 {
@@ -22,13 +23,13 @@ void I2C_Peripheral_Check(void)
 		LCD_ShowStr(10,10,"No AIC3204 Found",24);
 		while(1);
 	}
-
 }	
 
 
 void Sys_Init(void)
-{
+{ 
 	RCC->AHB1ENR|=RCC_AHB1ENR_GPIOAEN|RCC_AHB1ENR_GPIOBEN|RCC_AHB1ENR_GPIOCEN;    //Ê¹ÄÜPORTA B CÊ±ÖÓ 
+	SCB->AIRCR = 0X05FA0000|(4<<8);//Group priorities=8  Sub priorities=2
 	uart1_init(SystemCoreClock,115200);
 	delay_init(96);
 	LCD_Init();
