@@ -165,21 +165,21 @@ void I2S_Init(void)
 	I2S2ext->CR2 = SPI_CR2_RXDMAEN;
 	I2S2ext->I2SCFGR = 2;
 	
-	DMA1_Stream3->PAR = (uint32_t)(&I2S2ext->CRCPR);
+	DMA1_Stream3->PAR = (uint32_t)(&I2S2ext->DR);
 	DMA1_Stream3->M0AR = (uint32_t)&I2S_ADC_Buffer[0][0];
 	DMA1_Stream3->M1AR = (uint32_t)&I2S_ADC_Buffer[1][0];
 	DMA1_Stream3->NDTR = I2S_Data_Buffer_Size;
 	DMA1_Stream3->FCR = DMA_SxFCR_DMDIS|DMA_SxFCR_FTH_0;
 	DMA1_Stream3->CR = (3<<25)|DMA_SxCR_DBM|DMA_SxCR_PL_1|DMA_SxCR_MSIZE_0|DMA_SxCR_PSIZE_0|DMA_SxCR_MINC|DMA_SxCR_PFCTRL|DMA_SxCR_TCIE;
 	
-	DMA1_Stream4->PAR = (uint32_t)(&SPI2->CRCPR);
+	DMA1_Stream4->PAR = (uint32_t)(&SPI2->DR);
 	DMA1_Stream4->M0AR = (uint32_t)&I2S_DAC_Buffer[0][0];
 	DMA1_Stream4->M1AR = (uint32_t)&I2S_DAC_Buffer[1][0];
 	DMA1_Stream4->NDTR = I2S_Data_Buffer_Size;
 	DMA1_Stream4->FCR = DMA_SxFCR_DMDIS|DMA_SxFCR_FTH_0;
 	DMA1_Stream4->CR = (0<<25)|DMA_SxCR_DBM|DMA_SxCR_PL_0|DMA_SxCR_MSIZE_0|DMA_SxCR_PSIZE_0|DMA_SxCR_MINC|DMA_SxCR_DIR_0|DMA_SxCR_PFCTRL;
 	
-	NVIC->ISER[DMA1_Stream3_IRQn/32] |= 1<<DMA1_Stream3_IRQn%32;
+	NVIC->ISER[DMA1_Stream3_IRQn/32] |= 1<<(DMA1_Stream3_IRQn%32);
 	NVIC->IP[DMA1_Stream3_IRQn] = (3<<5)|(0<<4);
 	
 	SPI2->I2SCFGR |= SPI_I2SCFGR_I2SE;
@@ -210,9 +210,8 @@ void AIC3204_Init(void)
 {
 	uint32_t i;
 	uint32_t Cmd_Table_Size=sizeof(ZLCR_AIC3204_CODEC_Init_CMD_Table)/2;
-	
-	I2S_Init();
 
+	I2S_Init();
 	//TLV320AIC3204 reset
 	I2C_Write_Reg(AIC3204_I2C_ADDR,0x00,0x00);//page0
 	I2C_Write_Reg(AIC3204_I2C_ADDR,0x01,0x01);
@@ -230,4 +229,6 @@ void AIC3204_Init(void)
 	{
 		I2C_Write_Reg(AIC3204_I2C_ADDR,ZLCR_AIC3204_CODEC_Init_CMD_Table[i][0],ZLCR_AIC3204_CODEC_Init_CMD_Table[i][1]);
 	}
+	
+	LCR_Data_Init_Call_Back(&I2S_DAC_Buffer[0][0],0);
 }

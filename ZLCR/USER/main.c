@@ -9,14 +9,14 @@ void I2C_Peripheral_Check(void)
 {
 	uint8_t Error_Code;
 	POINT_COLOR=YELLOW;
-	Error_Code=EEPROM_24C02_Init();
-	if(Error_Code)
-	{
-		if(Error_Code==1)LCD_ShowStr(10,10,"No EEPROM Found",24);
-		if(Error_Code==2)LCD_ShowStr(10,10,"EEPROM Write Error",24);
-		if(Error_Code==3)LCD_ShowStr(10,10,"EEPROM CheckSum Error",24);
-		while(1);
-	}
+//	Error_Code=EEPROM_24C02_Init();
+//	if(Error_Code)
+//	{
+//		if(Error_Code==1)LCD_ShowStr(10,10,"No EEPROM Found",24);
+//		if(Error_Code==2)LCD_ShowStr(10,10,"EEPROM Write Error",24);
+//		if(Error_Code==3)LCD_ShowStr(10,10,"EEPROM CheckSum Error",24);
+//		while(1);
+//	}
 	delay_us(20);
 	if(AIC3204_Check())
 	{
